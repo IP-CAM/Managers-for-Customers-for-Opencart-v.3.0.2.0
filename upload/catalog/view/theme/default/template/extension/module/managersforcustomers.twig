@@ -1,0 +1,23 @@
+{% for manager in managers %}
+    <div class="manager-info">
+        <div class="manager-info_name">
+            <strong>{{ manager['firstname'] }} {{ manager['lastname'] }}</strong>
+        </div>
+        {% if manager['image'] %}
+            <div class="manager-info_image">
+                <img src="/image/{{ manager['image'] }}" alt="{{ manager['firstname'] }}">
+            </div>
+        {% endif %}
+        {% if manager['telephone'] %}
+            <div class="manager-info_phone">
+                <a href="tel:{{ manager['telephone'] }}">{{ manager['telephone'] }}</a>
+            </div>
+        {% endif %}
+
+        {% if manager['email'] %}
+            <div class="manager-info_email">
+                <a href="mailto:{{ manager['email'] }}">{{ manager['email'] }}</a>
+            </div>
+        {% endif %}
+    </div>
+{% endfor %}

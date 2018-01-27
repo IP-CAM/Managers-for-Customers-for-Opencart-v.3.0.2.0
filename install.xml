@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+    <name>Managers for Customers</name>
+    <version>1.2.0</version>
+    <author>AGriboed | alexv1rs@gmail.com</author>
+    <link>https://v1rus.ru</link>
+    <code>managersforcustomers</code>
+
+    <file path="system/library/cart/user.php">
+        <operation>
+            <search><![CDATA[SELECT permission]]></search>
+            <add position="replace"><![CDATA[SELECT permission,customer_groups]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$permissions = json_decode]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+	        $customer_groups = json_decode($user_group_query->row['customer_groups'], true);
+			if (is_array($customer_groups)) {
+					$this->customer_groups = $customer_groups;
+					}
+					else {
+					$this->customer_groups = array();
+					}
+			// Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/mail/order.php">
+        <operation>
+            <search><![CDATA[$mail->setText($this->load->view('mail/order_alert', $data));]]></search>
+            <add position="before"><![CDATA[
+            $customer = $this->db->query("SELECT * FROM " . DB_PREFIX .
+                "customer WHERE customer_id = '" . (int)$order_info['customer_id'] . "'")->row;
+            $managers = $this->db->query("SELECT u.email, ug.customer_groups FROM `" .
+                DB_PREFIX . "user` u RIGHT JOIN " . DB_PREFIX .
+                "user_group ug ON ug.user_group_id = u.user_group_id;")->rows;
+
+            foreach ($managers as $manager) {
+                $customer_groups = !empty($manager['customer_groups']) ? json_decode($manager['customer_groups']) :
+                    array();
+
+                if (is_array($customer['customer_group_id']) && in_array($customer['customer_group_id'], $customer_groups)) {
+                    if ($manager['email'] && filter_var($manager['email'], FILTER_VALIDATE_EMAIL)) {
+                        $mail->setTo($manager['email']);
+                        $mail->send();
+                    }
+                }
+            }
+            ]]></add>
+        </operation>
+    </file>
+    <file path="catalog/controller/api/customer.php">
+        <operation>
+            <search><![CDATA[$customer_group_id = $this->config->get('config_customer_group_id');]]></search>
+            <add position="after" offset="1"><![CDATA[
+            // Managers for Customers insertion
+    	            $customer_group_id = $this->request->post['customer_group_id'];
+            // Managers for Customers insertion
+                ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/language/en-gb/design/layout.php">
+        <operation>
+            <search><![CDATA[// Entry]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+                $_['managersforcustomers_extension']        = 'Manager Info';
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/language/ru-ru/design/layout.php">
+        <operation>
+            <search><![CDATA[// Entry]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+                $_['managersforcustomers_extension']        = 'Информация о менеджере';
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/language/en-gb/sale/order.php">
+        <operation>
+            <search><![CDATA[$_['text_customer_group']]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+                $_['text_customer_user_groups']        = 'Managers';
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/language/en-gb/user/user_group.php">
+        <operation>
+            <search><![CDATA[$_['entry_name']]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            $_['entry_customer_groups']  = 'Maintain Customer Groups';
+            $_['entry_help_customer_groups'] = 'Show only selected groups of customers for this user group';
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/language/ru-ru/sale/order.php">
+        <operation>
+            <search><![CDATA[$_['text_customer_group']]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+                $_['text_customer_user_groups']        = 'Группа менеджеров покупателя';
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/language/ru-ru/user/user_group.php">
+        <operation>
+            <search><![CDATA[$_['entry_name']]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            $_['entry_customer_groups']  = 'Вести группу клиентов';
+            $_['entry_help_customer_groups'] = 'Показывать только выбранные группы покупателей для этой группы пользователей';
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/controller/customer/customer.php">
+        <operation>
+            <search><![CDATA['filter_customer_group_id' => $filter_customer_group_id,]]></search>
+            <add position="after"><![CDATA[
+            // Managers for Customers insertion
+                'filter_customer_groups' => $this->user->customer_groups,
+            // Managers for Customers insertion
+                ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[if (isset($this->request->post['firstname'])) {]]></search>
+            <add position="before"><![CDATA[
+        // Managers for Customers insertion
+        if ( ! empty($this->user->customer_groups)) {
+            foreach ($data['customer_groups'] as $key => $value) {
+                if ( ! in_array($value['customer_group_id'], $this->user->customer_groups))
+                    unset($data['customer_groups'][$key]);
+            }
+
+            if ( ! in_array($data['customer_group_id'], $this->user->customer_groups)) {
+                $this->response->redirect($this->url->link('customer/customer',
+                    'token=' . $this->session->data['token'], true));
+            }
+        }
+        // Managers for Customers insertion
+                ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$results = $this->model_customer_customer->getCustomers($filter_data);]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+                $filter_data['filter_customer_groups'] = $this->user->customer_groups;
+            // Managers for Customers insertion
+          ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/customer/customer_group.php">
+        <operation>
+            <search>
+                <![CDATA[$customer_group_total = $this->model_customer_customer_group->getTotalCustomerGroups();]]></search>
+            <add position="before"><![CDATA[
+        // Managers for Customers insertion
+        $filter_data['filter_customer_groups'] = $this->user->customer_groups;
+        // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search>
+                <![CDATA[if (isset($this->request->get['customer_group_id']) && ($this->request->server['REQUEST_METHOD'] != 'POST')) {]]></search>
+            <add position="after"><![CDATA[
+            // Managers for Customers insertion
+            if ( ! empty($this->user->customer_groups) && ! in_array($this->request->get['customer_group_id'],
+                    $this->user->customer_groups)) {
+                $this->response->redirect($this->url->link('customer/customer_group',
+                    'token=' . $this->session->data['token'], true));
+            }
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/extension/dashboard/order.php">
+        <operation>
+            <search><![CDATA[array('filter_date_added']]></search>
+            <add position="replace">
+                <![CDATA[array('filter_customer_groups' => $this->user->customer_groups, 'filter_date_added']]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[getTotalOrders();]]></search>
+            <add position="replace">
+                <![CDATA[getTotalOrders(array('filter_customer_groups' => $this->user->customer_groups));]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/extension/dashboard/customer.php">
+        <operation>
+            <search><![CDATA[array('filter_date_added']]></search>
+            <add position="replace">
+                <![CDATA[array('filter_customer_groups' => $this->user->customer_groups, 'filter_date_added']]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[getTotalCustomers();]]></search>
+            <add position="replace">
+                <![CDATA[getTotalCustomers(array('filter_customer_groups' => $this->user->customer_groups));]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/extension/dashboard/recent.php">
+        <operation>
+            <search><![CDATA[$results]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            $filter_data['filter_customer_groups'] = $this->user->customer_groups;
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/sale/order.php">
+        <operation>
+            <search><![CDATA[$order_total = $this->model_sale_order->getTotalOrders($filter_data);]]></search>
+            <add position="before"><![CDATA[
+        // Managers for Customers insertion
+        $filter_data['filter_customer_groups'] = $this->user->customer_groups;
+        $data['column_customer_group']         = $this->language->get('text_customer_group');
+        $data['column_customer_user_groups']   = $this->language->get('text_customer_user_groups');
+
+        $this->load->model('user/user_group');
+        /**
+         * @var $user_groups array
+         */
+        $user_groups = $this->model_user_user_group->getUserGroups();
+
+        $this->load->model('user/user');
+        $users = $this->model_user_user->getUsers();
+
+        $groups = array();
+        foreach ($user_groups as $group) {
+            $group['customer_groups'] = ( ! empty($group['customer_groups']) && $group['customer_groups'] !== 'null') ? json_decode($group['customer_groups']) : array();
+            $group['users']           = array();
+
+            foreach ($users as $user) {
+                if ((int)$user['user_group_id'] === (int)$group['user_group_id']) {
+                    $group['users'][] = $user;
+                }
+            }
+            $groups[$group['user_group_id']] = $group;
+        }
+        // Managers for Customers insertion
+                ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA['customer'      => $result['customer'],]]></search>
+            <add position="after"><![CDATA[
+                // Managers for Customers insertion
+                'customer_group_name'  => $result['customer_group_name'],
+                'customer_user_groups' => $result['customer_user_groups'],
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$data['orders'][]]]></search>
+            <add position="before"><![CDATA[
+                            // Managers for Customers insertion
+                $result['customer_user_groups']['name']  = '';
+                $result['customer_user_groups']['users'] = array();
+                if ( ! empty($groups)) {
+                    foreach ($groups as $group) {
+                        if (in_array($result['customer_group_id'], $group['customer_groups'])) {
+                            $result['customer_user_groups']['name']  = $group['name'];
+                            $result['customer_user_groups']['users'] = $group['users'];
+                        }
+                    }
+                }
+                // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[if ($customer_group_info) {]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            if ( ! empty($this->user->customer_groups) && ! in_array($customer_group_info['customer_group_id'],
+                    $this->user->customer_groups)) {
+                $this->response->redirect($this->url->link('sale/order', 'token=' . $this->session->data['token'],
+                    true));
+            }
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$data['customer_groups'] = $this->model_customer_customer_group->getCustomerGroups();]]></search>
+            <add position="after"><![CDATA[
+            // Managers for Customers insertion
+        if (!empty($this->user->customer_groups)) {
+            foreach ($data['customer_groups'] as $key => $customer_group)
+            {
+                if (!in_array($customer_group['customer_group_id'], $this->user->customer_groups)) {
+                    unset($data['customer_groups'][$key]);
+                }
+            }
+        }
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/user/user_permission.php">
+        <operation>
+            <search><![CDATA[$data['sort_name']]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            $data['entry_customer_groups'] = $this->language->get('entry_customer_groups');
+            $data['help_customer_groups'] = $this->language->get('entry_help_customer_groups');
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[if (isset($this->request->post['name'])) {]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+            $this->load->model('customer/customer_group');
+            $data['customer_groups_list'] = $this->model_customer_customer_group->getCustomerGroups(array());
+
+		    if (isset($this->request->post['customer_groups'])) {
+			$data['customer_user_groups'] = $this->request->post['customer_groups'];
+		    } elseif (!empty($user_group_info['customer_groups'])) {
+			$data['customer_groups'] = $user_group_info['customer_groups'];
+			$data['customer_groups_keys'] = array_flip($user_group_info['customer_groups']);
+		    } else {
+			$data['customer_groups'] = array();
+			$data['customer_groups_keys'] = array();
+		    }
+		    // Managers for Customers insertion
+           
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/design/layout.php">
+        <operation>
+            <search><![CDATA[$this->response->setOutput($this->load->view('design/layout_form', $data));]]></search>
+            <add position="before"><![CDATA[
+                  $data['extensions'][] = array(
+					'name'   => $this->language->get('managersforcustomers_extension'),
+					'code'   => 'managersforcustomers',
+					'module' => [
+                    ]
+		        );
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/model/customer/customer.php">
+        <operation>
+            <search><![CDATA[if (!empty($data['filter_date_added'])) {]]></search>
+            <add position="before"><![CDATA[
+            // Managers for Customers insertion
+		if (!empty($data['filter_customer_groups'])) {
+             $implode[] = "c.customer_group_id IN (".implode(',',$data['filter_customer_groups']).")";
+		}
+		// Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$sql = "SELECT COUNT(*) AS total FROM " . DB_PREFIX . "customer";]]></search>
+            <add position="replace"><![CDATA[
+            // Managers for Customers insertion
+            $sql = "SELECT COUNT(*) AS total FROM " . DB_PREFIX . "customer c";
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/model/customer/customer_group.php">
+        <operation>
+            <search><![CDATA[if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {]]></search>
+            <add position="before"><![CDATA[
+        // Managers for Customers insertion
+        if (!empty($data['filter_customer_groups'])) {
+            $sql .= ' AND cg.customer_group_id IN (' . implode(',',$data['filter_customer_groups']) . ")";
+        }
+        // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/model/sale/order.php">
+        <operation>
+            <search><![CDATA[if (!empty($data['filter_order_id'])) {]]></search>
+            <add position="before"><![CDATA[
+        // Managers for Customers insertion
+        if (!empty($data['filter_customer_groups'])) {
+            $sql .= ' AND o.customer_group_id IN (' . implode(',',$data['filter_customer_groups']) . ')';
+        }
+        // Managers for Customers insertion
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[CONCAT(o.firstname, ' ', o.lastname) AS customer, ]]></search>
+            <add position="replace">
+                <![CDATA[
+                CONCAT(o.firstname, ' ', o.lastname) AS customer, o.customer_id, o.customer_group_id,(SELECT cgd.name FROM " . DB_PREFIX . "customer_group_description cgd WHERE cgd.customer_group_id=o.customer_group_id AND cgd.language_id = '" . (int)$this->config->get('config_language_id') . "') as customer_group_name,
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$sql = "SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "order`";]]></search>
+            <add position="replace"><![CDATA[
+            // Managers for Customers insertion
+            $sql = "SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "order` o";
+            // Managers for Customers insertion
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/model/user/user_group.php">
+        <operation>
+            <search><![CDATA['permission' => json_decode($query->row['permission'], true)]]></search>
+            <add position="replace"><![CDATA[
+            'permission' => json_decode($query->row['permission'], true),
+            'customer_groups' => json_decode($query->row['customer_groups'],true)
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[name = '" . $this->db->escape($data['name']) . "']]></search>
+            <add position="replace">
+                <![CDATA[
+                name = '" . $this->db->escape($data['name']) . "', customer_groups = '" . json_encode($data['customer_groups']) . "'
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_list.twig">
+        <operation>
+            <search><![CDATA[<td class="text-left">{{ order.customer }}</td>]]></search>
+            <add position="after"><![CDATA[
+                <td class="text-left">{{ order.customer_group_name }}</td>
+                <td class="text-left customer_user_groups">
+             {% if order.customer_user_groups.users %}
+                <a href="#" class="user-groups-toggle">{{ order.customer_user_groups.name }}</a>
+              <ul>
+              {% for user in order.customer_user_groups.users %}
+              <li><a href="/admin/index.php?route=user/user/edit&token={{ token }} &user_id={{ user.user_id }}" target="_blank">{{ user.firstname }} {{ user.lastname }}</a></li>
+              {% endfor %}
+              </ul>
+              {% else %}
+              {{ order.customer_user_groups.name }}
+              {% endif %}
+                </td>
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[<td class="text-left">{% if sort == 'order_status' %}]]></search>
+            <add position="before"><![CDATA[
+              <td class="text-left">{{ column_customer_group }}</td>
+              <td class="text-left">{{ column_customer_user_groups }}</td>
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[{{ footer }} ]]></search>
+            <add position="before"><![CDATA[
+          <style>
+          .customer_user_groups > a {
+          text-decoration none;
+          border-bottom: 1px dotted;
+          }
+          .customer_user_groups ul {
+          display: none;
+          list-style: none;
+          background:#fff;
+          border: 1px solid #c3c3c3;
+          padding: 10px;
+          position: absolute;
+          width: 200px;
+          box-shadow: 1px 2px 5px #ddd;
+          }
+          </style>
+          <script>
+          $('.user-groups-toggle').click(function() {
+          var ul = $(this).parent().find('ul');
+            ul.toggle( "slow" );
+            return false;
+          });
+
+          </script>
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/view/template/user/user_group_form.twig">
+        <operation>
+            <search><![CDATA[<label class="col-sm-2 control-label">{{ entry_access }}</label>]]></search>
+            <add position="before" offset="1"><![CDATA[
+          <div class="form-group">
+            <label class="col-sm-2 control-label" for="customer_groups"><span data-toggle="tooltip" title="{{ help_customer_groups }}">{{ entry_customer_groups }}</label>
+            <div class="col-sm-10">
+            {% for group in customer_groups_list %}
+            <p>
+            <label for="group{{ group.customer_group_id }}">{{ group.name }}</label>
+            <input type="checkbox" name="customer_groups[]" id="group{{ group.customer_group_id }}" value="{{ group.customer_group_id }}" {% if group.customer_group_id in customer_groups_keys|keys %}checked{% endif %}>
+            </p>
+            {% endfor %}
+            </div>
+          </div>
+            ]]></add>
+        </operation>
+    </file>
+    <!--
+    <file path="admin/model/report/sale.php">
+        <operation>
+            <search><![CDATA[if (!empty($data['filter_date_added'])) {]]></search>
+            <add position="before"><![CDATA[
+            if (!empty($data['filter_customer_groups'])) {
+             $sql .= " AND customer_group_id IN (".implode(',',$data['filter_customer_groups']).")";
+		    }
+            ]]></add>
+        </operation>
+    </file>
+    <file path="admin/controller/extension/dashboard/sale.php">
+        <operation>
+            <search><![CDATA[array('filter_date_added']]></search>
+            <add position="replace">
+                <![CDATA[array('filter_customer_groups' => $this->user->customer_groups, 'filter_date_added']]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[getTotalSales();]]></search>
+            <add position="replace">
+                <![CDATA[getTotalSales(array('filter_customer_groups' => $this->user->customer_groups));]]></add>
+        </operation>
+    </file>
+-->
+</modification>

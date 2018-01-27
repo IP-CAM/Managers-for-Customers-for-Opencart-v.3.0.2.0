@@ -1,0 +1,1 @@
+ALTER TABLE `oc_user_group` ADD `customer_groups` VARCHAR(255) NOT NULL AFTER `permission`;
